@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dartz/dartz.dart';
 import '../datasources/games_local_data_source.dart';
 import '../datasources/flatpak_data_source.dart';
@@ -13,9 +14,9 @@ class GamesRepositoryImpl {
     required this.flatpakDataSource,
   });
 
-  Future<Either<String, List<GameModel>>> getGames({int limit = 50, int offset = 0, String? query, int? categoryId}) async {
+  Future<Either<String, List<GameModel>>> getGames({int limit = 50, int offset = 0, String? query, int? categoryId, String? developer}) async {
     try {
-      final games = await localDataSource.getGames(limit: limit, offset: offset, query: query, categoryId: categoryId);
+      final games = await localDataSource.getGames(limit: limit, offset: offset, query: query, categoryId: categoryId, developer: developer);
       return Right(games);
     } catch (e) {
       return Left(e.toString());
@@ -93,5 +94,20 @@ class GamesRepositoryImpl {
       }
     } catch (_) {}
     yield* flatpakDataSource.upgradeAppStream(ref);
+  }
+
+  Future<void> openApp(String appId) async {
+    String ref = appId;
+    if (ref.contains('/')) {
+      final parts = ref.split('/');
+      if (parts.length > 1) {
+        ref = parts[1];
+      }
+    }
+    try {
+      await Process.start('flatpak', ['run', ref], mode: ProcessStartMode.detached);
+    } catch (e) {
+      print('Failed to launch flatpak app: $e');
+    }
   }
 }

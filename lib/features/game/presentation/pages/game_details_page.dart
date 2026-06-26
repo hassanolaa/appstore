@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:game_store/service_locator.dart';
 import 'package:game_store/features/games/data/models/game_model.dart';
+import 'package:game_store/features/games/presentation/pages/developer_page.dart';
 import '../cubit/game_details_cubit.dart';
 
 class GameDetailsPage extends StatelessWidget {
@@ -79,18 +81,33 @@ class GameDetailsPage extends StatelessWidget {
                             ),
                           ] else if (isLoading)
                             const CircularProgressIndicator()
-                          else if (isGameInstalled)
+                          else if (isGameInstalled) ...[
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.play_arrow),
+                              label: const Text('Open'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                              ),
+                              onPressed: () {
+                                context.read<GameDetailsCubit>().openGame();
+                              },
+                            ),
+                            const SizedBox(height: 12),
                             ElevatedButton.icon(
                               icon: const Icon(Icons.delete),
                               label: const Text('Uninstall'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                               ),
                               onPressed: () {
                                 context.read<GameDetailsCubit>().removeGame();
                               },
-                            )
+                            ),
+                          ]
                           else
                             ElevatedButton.icon(
                               icon: const Icon(Icons.download),
@@ -135,10 +152,33 @@ class GameDetailsPage extends StatelessWidget {
                           style: Theme.of(context).textTheme.displayMedium,
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          'Developer: ${activeGame.developer ?? 'Unknown'}',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
-                        ),
+                        if (activeGame.developer != null && activeGame.developer!.isNotEmpty)
+                          InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => DeveloperPage(developerName: activeGame.developer!),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(4),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                              child: Text(
+                                'Developer: ${activeGame.developer}',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                              ),
+                            ),
+                          )
+                        else
+                          Text(
+                            'Developer: Unknown',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
+                          ),
                         const SizedBox(height: 16),
                         Text(
                           activeGame.summary ?? '',
@@ -178,21 +218,47 @@ class GameDetailsPage extends StatelessWidget {
 
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 16.0),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: AspectRatio(
-                                      aspectRatio: 16 / 9,
-                                      child: isNetwork
-                                          ? Image.network(
-                                              source,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.broken_image, size: 64)),
-                                            )
-                                          : Image.file(
-                                              File(source),
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.broken_image, size: 64)),
+                                  child: Focus(
+                                    child: Builder(
+                                      builder: (context) {
+                                        final isFocused = Focus.of(context).hasFocus;
+                                        return InkWell(
+                                          onTap: () {
+                                            final sources = activeGame.screenshots.map((s) => s.source ?? '').toList();
+                                            showDialog(
+                                              context: context,
+                                              builder: (_) => ScreenshotViewer(screenshots: sources, initialIndex: index),
+                                            );
+                                          },
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 200),
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: isFocused ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                                                width: 3,
+                                              ),
                                             ),
+                                            child: ClipRRect(
+                                              borderRadius: BorderRadius.circular(12),
+                                              child: AspectRatio(
+                                                aspectRatio: 16 / 9,
+                                                child: isNetwork
+                                                    ? Image.network(
+                                                        source,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.broken_image, size: 64)),
+                                                      )
+                                                    : Image.file(
+                                                        File(source),
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.broken_image, size: 64)),
+                                                      ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }
                                     ),
                                   ),
                                 );
@@ -221,6 +287,167 @@ class GameDetailsPage extends StatelessWidget {
         children: [
           Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
           Expanded(child: Text(value, style: const TextStyle(color: Colors.white70))),
+        ],
+      ),
+    );
+  }
+}
+
+class ScreenshotViewer extends StatefulWidget {
+  final List<String> screenshots;
+  final int initialIndex;
+
+  const ScreenshotViewer({
+    super.key,
+    required this.screenshots,
+    required this.initialIndex,
+  });
+
+  @override
+  State<ScreenshotViewer> createState() => _ScreenshotViewerState();
+}
+
+class _ScreenshotViewerState extends State<ScreenshotViewer> {
+  late final PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _next() {
+    if (_currentIndex < widget.screenshots.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _prev() {
+    if (_currentIndex > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog.fullscreen(
+      backgroundColor: Colors.black.withOpacity(0.95),
+      child: Stack(
+        children: [
+          Focus(
+            autofocus: true,
+            onKeyEvent: (node, event) {
+              if (event.runtimeType.toString() == 'KeyDownEvent' || event.runtimeType.toString() == 'RawKeyDownEvent') {
+                final key = event.logicalKey;
+                if (key == LogicalKeyboardKey.arrowRight) {
+                  _next();
+                  return KeyEventResult.handled;
+                } else if (key == LogicalKeyboardKey.arrowLeft) {
+                  _prev();
+                  return KeyEventResult.handled;
+                } else if (key == LogicalKeyboardKey.escape) {
+                  Navigator.of(context).pop();
+                  return KeyEventResult.handled;
+                }
+              }
+              return KeyEventResult.ignored;
+            },
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: widget.screenshots.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                final source = widget.screenshots[index];
+                final isNetwork = source.startsWith('http');
+                return Center(
+                  child: InteractiveViewer(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: isNetwork
+                          ? Image.network(
+                              source,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 100),
+                            )
+                          : Image.file(
+                              File(source),
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 100),
+                            ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Positioned(
+            top: 24,
+            left: 24,
+            right: 24,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Screenshot ${_currentIndex + 1} / ${widget.screenshots.length}',
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          ),
+          if (_currentIndex > 0)
+            Positioned(
+              left: 24,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: IconButton(
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white12,
+                    hoverColor: Colors.white24,
+                  ),
+                  icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 28),
+                  onPressed: _prev,
+                ),
+              ),
+            ),
+          if (_currentIndex < widget.screenshots.length - 1)
+            Positioned(
+              right: 24,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: IconButton(
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white12,
+                    hoverColor: Colors.white24,
+                  ),
+                  icon: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 28),
+                  onPressed: _next,
+                ),
+              ),
+            ),
         ],
       ),
     );

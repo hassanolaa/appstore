@@ -120,4 +120,8 @@ class GameDetailsCubit extends Cubit<GameDetailsState> {
       },
     );
   }
+
+  Future<void> openGame() async {
+    await repository.openApp(gameId);
+  }
 }

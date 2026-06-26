@@ -2,7 +2,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../models/game_model.dart';
 
 abstract class GamesLocalDataSource {
-  Future<List<GameModel>> getGames({int limit = 50, int offset = 0, String? query, int? categoryId});
+  Future<List<GameModel>> getGames({int limit = 50, int offset = 0, String? query, int? categoryId, String? developer});
   Future<GameModel?> getGameById(String id);
 }
 
@@ -12,27 +12,38 @@ class GamesLocalDataSourceImpl implements GamesLocalDataSource {
   GamesLocalDataSourceImpl({required this.database});
 
   @override
-  Future<List<GameModel>> getGames({int limit = 50, int offset = 0, String? query, int? categoryId}) async {
-    String? whereClause;
-    List<dynamic>? whereArgs;
+  Future<List<GameModel>> getGames({int limit = 50, int offset = 0, String? query, int? categoryId, String? developer}) async {
+    List<String> conditions = [];
+    List<dynamic> whereArgs = [];
 
     if (query != null && query.isNotEmpty) {
-      whereClause = 'name LIKE ? OR summary LIKE ?';
-      whereArgs = ['%$query%', '%$query%'];
+      conditions.add('(name LIKE ? OR summary LIKE ?)');
+      whereArgs.addAll(['%$query%', '%$query%']);
     }
+
+    if (developer != null && developer.isNotEmpty) {
+      conditions.add('developer = ?');
+      whereArgs.add(developer);
+    }
+
+    String whereClause = conditions.isEmpty ? '' : 'WHERE ${conditions.join(' AND ')}';
 
     if (categoryId != null) {
       // If we need to filter by category, we need to join with app_categories
       final String sql = '''
         SELECT a.* FROM apps a
         INNER JOIN app_categories ac ON a.id = ac.app_id
-        WHERE ac.category_id = ?
-        ${whereClause != null ? 'AND ($whereClause)' : ''}
+        ${whereClause.isEmpty ? 'WHERE ac.category_id = ?' : '$whereClause AND ac.category_id = ?'}
         LIMIT ? OFFSET ?
       ''';
       
-      final List<Object?> args = [categoryId];
-      if (whereArgs != null) args.addAll(whereArgs);
+      final List<Object?> args = [];
+      if (whereClause.isEmpty) {
+        args.add(categoryId);
+      } else {
+        args.addAll(whereArgs);
+        args.add(categoryId);
+      }
       args.addAll([limit, offset]);
 
       final List<Map<String, dynamic>> maps = await database.rawQuery(sql, args);
@@ -40,8 +51,8 @@ class GamesLocalDataSourceImpl implements GamesLocalDataSource {
     } else {
       final List<Map<String, dynamic>> maps = await database.query(
         'apps',
-        where: whereClause,
-        whereArgs: whereArgs,
+        where: conditions.isEmpty ? null : conditions.join(' AND '),
+        whereArgs: whereArgs.isEmpty ? null : whereArgs,
         limit: limit,
         offset: offset,
       );
