@@ -15,7 +15,9 @@ class LibraryPage extends StatelessWidget {
         if (state is GamesLoading) {
           return const Center(child: CircularProgressIndicator());
         } else if (state is GamesLoaded) {
-          final installedGames = state.games.where((game) => state.installedGames.contains(game.id)).toList();
+          final installedGames = state.games.where((game) {
+            return state.installedGames.any((ref) => ref.contains(game.id) || game.id.contains(ref));
+          }).toList();
 
           if (installedGames.isEmpty) {
             return const Center(

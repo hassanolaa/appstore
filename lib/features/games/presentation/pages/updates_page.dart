@@ -15,7 +15,9 @@ class UpdatesPage extends StatelessWidget {
         if (state is GamesLoading) {
           return const Center(child: CircularProgressIndicator());
         } else if (state is GamesLoaded) {
-          final upgradableGames = state.games.where((game) => state.upgradableGames.contains(game.id)).toList();
+          final upgradableGames = state.games.where((game) {
+            return state.upgradableGames.any((ref) => ref.contains(game.id) || game.id.contains(ref));
+          }).toList();
 
           if (upgradableGames.isEmpty) {
             return const Center(

@@ -53,15 +53,45 @@ class GamesRepositoryImpl {
     }
   }
 
-  Stream<FlatpakProgress> installGameStream(String id) {
-    return flatpakDataSource.installAppStream(id);
+  Stream<FlatpakProgress> installGameStream(String id) async* {
+    String ref = id;
+    try {
+      final game = await localDataSource.getGameById(id);
+      if (game != null && game.bundles.isNotEmpty) {
+        final bundleRef = game.bundles.first.flatpakRef;
+        if (bundleRef != null && bundleRef.isNotEmpty) {
+          ref = bundleRef;
+        }
+      }
+    } catch (_) {}
+    yield* flatpakDataSource.installAppStream(ref);
   }
 
-  Stream<FlatpakProgress> removeGameStream(String id) {
-    return flatpakDataSource.removeAppStream(id);
+  Stream<FlatpakProgress> removeGameStream(String id) async* {
+    String ref = id;
+    try {
+      final game = await localDataSource.getGameById(id);
+      if (game != null && game.bundles.isNotEmpty) {
+        final bundleRef = game.bundles.first.flatpakRef;
+        if (bundleRef != null && bundleRef.isNotEmpty) {
+          ref = bundleRef;
+        }
+      }
+    } catch (_) {}
+    yield* flatpakDataSource.removeAppStream(ref);
   }
 
-  Stream<FlatpakProgress> upgradeGameStream(String id) {
-    return flatpakDataSource.upgradeAppStream(id);
+  Stream<FlatpakProgress> upgradeGameStream(String id) async* {
+    String ref = id;
+    try {
+      final game = await localDataSource.getGameById(id);
+      if (game != null && game.bundles.isNotEmpty) {
+        final bundleRef = game.bundles.first.flatpakRef;
+        if (bundleRef != null && bundleRef.isNotEmpty) {
+          ref = bundleRef;
+        }
+      }
+    } catch (_) {}
+    yield* flatpakDataSource.upgradeAppStream(ref);
   }
 }

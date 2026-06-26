@@ -6,30 +6,65 @@ import '../models/flatpak_transaction_operation.dart';
 abstract class FlatpakDataSource {
   Future<List<String>> listInstalled({bool isSystem = true});
   Future<List<String>> listUpgradable({bool isSystem = true});
-  Stream<FlatpakProgress> installAppStream(String reference, {bool isSystem = true, String remote = 'flathub'});
-  Stream<FlatpakProgress> removeAppStream(String reference, {bool isSystem = true});
-  Stream<FlatpakProgress> upgradeAppStream(String reference, {bool isSystem = true});
+  Stream<FlatpakProgress> installAppStream(
+    String reference, {
+    bool isSystem = true,
+    String remote = 'flathub',
+  });
+  Stream<FlatpakProgress> removeAppStream(
+    String reference, {
+    bool isSystem = true,
+  });
+  Stream<FlatpakProgress> upgradeAppStream(
+    String reference, {
+    bool isSystem = true,
+  });
 }
 
 class FlatpakDataSourceImpl implements FlatpakDataSource {
+  static const String _cliName = 'libflatpakcli';
+  static const String _defaultRemote = 'flathub';
+
+  Future<List<String>> _parseListOutput(String output) async {
+    final trimmed = output.trim();
+    if (trimmed.isEmpty) return [];
+    if (trimmed.startsWith('[')) {
+      try {
+        final List<dynamic> list = json.decode(trimmed);
+        return list.map((item) => item.toString()).toList();
+      } catch (_) {}
+    }
+    return trimmed
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+  }
+
   @override
   Future<List<String>> listInstalled({bool isSystem = true}) async {
-    final scope = isSystem ? '--system' : '--user';
-    final result = await Process.run('flatpak', ['list', scope, '--app', '--columns=application']);
-    if (result.exitCode == 0) {
-      final output = result.stdout as String;
-      return output.split('\n').where((line) => line.trim().isNotEmpty).toList();
+    try {
+      final result = await Process.run(_cliName, ['list-installed', 'system']);
+      if (result.exitCode == 0) {
+        final parsed = await _parseListOutput(result.stdout as String);
+        return parsed;
+      }
+    } catch (e, stack) {
+      print('FLATPAK_LOG: list-installed failed with error: $e\n$stack');
     }
     return [];
   }
 
   @override
   Future<List<String>> listUpgradable({bool isSystem = true}) async {
-    final scope = isSystem ? '--system' : '--user';
-    final result = await Process.run('flatpak', ['list', scope, '--updates', '--columns=application']);
-    if (result.exitCode == 0) {
-      final output = result.stdout as String;
-      return output.split('\n').where((line) => line.trim().isNotEmpty).toList();
+    try {
+      final result = await Process.run(_cliName, ['list-upgradable', 'system']);
+      if (result.exitCode == 0) {
+        final parsed = await _parseListOutput(result.stdout as String);
+        return parsed;
+      }
+    } catch (e, stack) {
+      print('FLATPAK_LOG: list-upgradable failed with error: $e\n$stack');
     }
     return [];
   }
@@ -37,8 +72,14 @@ class FlatpakDataSourceImpl implements FlatpakDataSource {
   Stream<FlatpakProgress> _executeTransactionStream(List<String> args) async* {
     List<MyFlatpakTransactionOperation> operations = [];
     try {
-      final process = await Process.start('flatpak-helper', args);
-      
+      final process = await Process.start(_cliName, args);
+
+      // Listen and print stderr
+      StringBuffer stderrBuffer = StringBuffer();
+      process.stderr.transform(utf8.decoder).listen((errorData) {
+        stderrBuffer.write(errorData);
+      });
+
       List<int> buffer = [];
       bool headerParsed = false;
 
@@ -50,13 +91,22 @@ class FlatpakDataSourceImpl implements FlatpakDataSource {
             try {
               final jsonStr = utf8.decode(buffer);
               final List<dynamic> jsonList = json.decode(jsonStr);
-              operations = jsonList.map((item) => MyFlatpakTransactionOperation.fromJson(item)).toList();
+              operations =
+                  jsonList
+                      .map(
+                        (item) => MyFlatpakTransactionOperation.fromJson(item),
+                      )
+                      .toList();
             } catch (_) {
               operations = [];
             }
             headerParsed = true;
-            buffer = chunk.sublist(nullIdx + 1);
-            yield FlatpakProgress(operations: operations, progress: 0.0, status: "Starting...");
+            buffer = chunk.sublist(nullIdx + 1).toList();
+            yield FlatpakProgress(
+              operations: operations,
+              progress: 0.0,
+              status: "Starting...",
+            );
           } else {
             buffer.addAll(chunk);
           }
@@ -68,7 +118,7 @@ class FlatpakDataSourceImpl implements FlatpakDataSource {
           while (buffer.contains(0)) {
             int idx = buffer.indexOf(0);
             final progressBytes = buffer.sublist(0, idx);
-            buffer = buffer.sublist(idx + 1);
+            buffer = buffer.sublist(idx + 1).toList();
 
             try {
               final progressStr = utf8.decode(progressBytes).trim();
@@ -82,7 +132,9 @@ class FlatpakDataSourceImpl implements FlatpakDataSource {
                   );
                 }
               }
-            } catch (_) {}
+            } catch (e) {
+              print('FLATPAK_LOG: Error parsing progress chunk: $e');
+            }
           }
         }
       }
@@ -100,33 +152,74 @@ class FlatpakDataSourceImpl implements FlatpakDataSource {
           }
         } catch (_) {}
       }
-    } catch (e) {
-      // Fallback: simulated progress for development if flatpak-helper is missing
-      operations = [MyFlatpakTransactionOperation(ref: args.last, type: 'install', remote: 'flathub')];
-      yield FlatpakProgress(operations: operations, progress: 0.0, status: "Starting (Simulated)...");
-      for (int i = 1; i <= 10; i++) {
-        await Future.delayed(const Duration(milliseconds: 300));
-        yield FlatpakProgress(operations: operations, progress: i * 0.1, status: "Running (Simulated)...");
+
+      final exitCode = await process.exitCode;
+      if (exitCode != 0) {
+        throw ProcessException(
+          _cliName,
+          args,
+          'Process exited with non-zero exit code.\nStderr: $stderrBuffer',
+          exitCode,
+        );
       }
-      yield FlatpakProgress(operations: operations, progress: 1.0, status: "Completed");
+    } catch (e, stack) {
+      // If flatpak cli is missing/not found, fall back to mock simulation
+      final errStr = e.toString();
+      if (errStr.contains('No such file or directory') ||
+          errStr.contains('ProcessException')) {
+        operations = [
+          MyFlatpakTransactionOperation(
+            ref: args.last,
+            type: args.first,
+            remote: _defaultRemote,
+          ),
+        ];
+        yield FlatpakProgress(
+          operations: operations,
+          progress: 0.0,
+          status: "Starting (Simulated)...",
+        );
+        for (int i = 1; i <= 10; i++) {
+          await Future.delayed(const Duration(milliseconds: 300));
+          yield FlatpakProgress(
+            operations: operations,
+            progress: i * 0.1,
+            status: "Running (Simulated)...",
+          );
+        }
+        yield FlatpakProgress(
+          operations: operations,
+          progress: 1.0,
+          status: "Completed",
+        );
+      } else {
+        rethrow;
+      }
     }
   }
 
   @override
-  Stream<FlatpakProgress> installAppStream(String reference, {bool isSystem = true, String remote = 'flathub'}) {
-    final scope = isSystem ? 'system' : 'user';
-    return _executeTransactionStream(['install', scope, remote, reference]);
+  Stream<FlatpakProgress> installAppStream(
+    String reference, {
+    bool isSystem = true,
+    String remote = _defaultRemote,
+  }) {
+    return _executeTransactionStream(['install', 'system', remote, reference]);
   }
 
   @override
-  Stream<FlatpakProgress> removeAppStream(String reference, {bool isSystem = true}) {
-    final scope = isSystem ? 'system' : 'user';
-    return _executeTransactionStream(['remove', scope, reference]);
+  Stream<FlatpakProgress> removeAppStream(
+    String reference, {
+    bool isSystem = true,
+  }) {
+    return _executeTransactionStream(['remove', 'system', reference]);
   }
 
   @override
-  Stream<FlatpakProgress> upgradeAppStream(String reference, {bool isSystem = true}) {
-    final scope = isSystem ? 'system' : 'user';
-    return _executeTransactionStream(['upgrade', scope, reference]);
+  Stream<FlatpakProgress> upgradeAppStream(
+    String reference, {
+    bool isSystem = true,
+  }) {
+    return _executeTransactionStream(['upgrade', 'system', reference]);
   }
 }

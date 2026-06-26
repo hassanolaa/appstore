@@ -49,7 +49,21 @@ class GameDetailsCubit extends Cubit<GameDetailsState> {
       (error) => emit(GameDetailsError(error)),
       (gameDetails) {
         _game = gameDetails;
-        final isInstalled = installedResult.fold((_) => false, (list) => list.contains(gameId));
+        final isInstalled = installedResult.fold(
+          (_) => false,
+          (list) {
+            if (list.contains(gameId)) return true;
+            for (final ref in list) {
+              if (ref.contains(gameId)) return true;
+              for (final bundle in gameDetails.bundles) {
+                if (bundle.flatpakRef != null && (ref == bundle.flatpakRef || ref.contains(bundle.flatpakRef!))) {
+                  return true;
+                }
+              }
+            }
+            return false;
+          },
+        );
         emit(GameDetailsLoaded(isInstalled: isInstalled, game: _game));
       },
     );

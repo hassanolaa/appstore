@@ -129,7 +129,7 @@ class _GamesPageState extends State<GamesPage> {
                   itemCount: state.games.length,
                   itemBuilder: (context, index) {
                     final game = state.games[index];
-                    final isInstalled = state.installedGames.contains(game.id);
+                    final isInstalled = state.installedGames.any((ref) => ref.contains(game.id) || game.id.contains(ref));
 
                     return GameCard(
                       game: game,
