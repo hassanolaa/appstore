@@ -66,12 +66,14 @@ class _GameDetailsView extends StatelessWidget {
               double? progress;
               String? progressStatus;
               GameModel activeGame = game;
+              Map<String, dynamic>? appInfo;
 
               if (state is GameDetailsLoaded) {
                 isGameInstalled = state.isInstalled;
                 activeGame = state.game;
                 progress = state.progress;
                 progressStatus = state.progressStatus;
+                appInfo = state.appInfo;
               }
 
               return Column(
@@ -95,6 +97,7 @@ class _GameDetailsView extends StatelessWidget {
                               progress: progress,
                               progressStatus: progressStatus,
                               scheme: scheme,
+                              appInfo: appInfo,
                             ),
                           ),
                           const SizedBox(width: 24),
@@ -171,6 +174,7 @@ class _LeftPanel extends StatelessWidget {
   final double? progress;
   final String? progressStatus;
   final ColorScheme scheme;
+  final Map<String, dynamic>? appInfo;
 
   const _LeftPanel({
     required this.game,
@@ -179,7 +183,21 @@ class _LeftPanel extends StatelessWidget {
     required this.progress,
     required this.progressStatus,
     required this.scheme,
+    this.appInfo,
   });
+
+  String _formatBytes(dynamic bytes) {
+    if (bytes == null) return 'Unknown';
+    final intBytes = int.tryParse(bytes.toString());
+    if (intBytes == null) return 'Unknown';
+
+    if (intBytes < 1024) return '$intBytes B';
+    if (intBytes < 1024 * 1024)
+      return '${(intBytes / 1024).toStringAsFixed(1)} KB';
+    if (intBytes < 1024 * 1024 * 1024)
+      return '${(intBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(intBytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -214,6 +232,16 @@ class _LeftPanel extends StatelessWidget {
               const SizedBox(height: 16),
               _SectionLabel('Bundle Info'),
               const SizedBox(height: 12),
+              if (appInfo != null) ...[
+                _MetadataItem(
+                  'Download Size',
+                  _formatBytes(appInfo!['download_size']),
+                ),
+                _MetadataItem(
+                  'Installed Size',
+                  _formatBytes(appInfo!['installed_size']),
+                ),
+              ],
               _MetadataItem('Ref', game.bundles.first.flatpakRef),
               _MetadataItem('Runtime', game.bundles.first.runtime),
               _MetadataItem('SDK', game.bundles.first.sdk),

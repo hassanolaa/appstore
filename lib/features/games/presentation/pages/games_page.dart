@@ -16,6 +16,7 @@ class GamesPage extends StatefulWidget {
 
 class _GamesPageState extends State<GamesPage> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   int? _selectedCategoryId;
   String _searchQuery = '';
 
@@ -24,12 +25,21 @@ class _GamesPageState extends State<GamesPage> {
     super.initState();
     context.read<CategoriesCubit>().loadCategories();
     _loadData();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      context.read<GamesCubit>().loadMoreGames();
+    }
   }
 
   void _loadData() {
@@ -145,6 +155,7 @@ class _GamesPageState extends State<GamesPage> {
                 }
 
                 return GridView.builder(
+                  controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: 240,

@@ -96,6 +96,23 @@ class GamesRepositoryImpl {
     yield* flatpakDataSource.upgradeAppStream(ref);
   }
 
+  Future<Either<String, Map<String, dynamic>?>> getAppInfo(String id) async {
+    try {
+      String ref = id;
+      final game = await localDataSource.getGameById(id);
+      if (game != null && game.bundles.isNotEmpty) {
+        final bundleRef = game.bundles.first.flatpakRef;
+        if (bundleRef != null && bundleRef.isNotEmpty) {
+          ref = bundleRef;
+        }
+      }
+      final info = await flatpakDataSource.getAppInfo(ref);
+      return Right(info);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
   Future<void> openApp(String appId) async {
     String ref = appId;
     if (ref.contains('/')) {

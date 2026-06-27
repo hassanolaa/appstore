@@ -13,12 +13,14 @@ class GameDetailsLoaded extends GameDetailsState {
   final GameModel game;
   final double? progress;
   final String? progressStatus;
+  final Map<String, dynamic>? appInfo;
 
   GameDetailsLoaded({
     required this.isInstalled,
     required this.game,
     this.progress,
     this.progressStatus,
+    this.appInfo,
   });
 }
 
@@ -32,6 +34,7 @@ class GameDetailsCubit extends Cubit<GameDetailsState> {
   final GamesRepositoryImpl repository;
   final String gameId;
   GameModel _game;
+  Map<String, dynamic>? _appInfo;
 
   GameDetailsCubit({
     required this.repository,
@@ -44,6 +47,9 @@ class GameDetailsCubit extends Cubit<GameDetailsState> {
   Future<void> loadDetails() async {
     final result = await repository.getGameDetails(gameId);
     final installedResult = await repository.getInstalledGames();
+    final appInfoResult = await repository.getAppInfo(gameId);
+
+    _appInfo = appInfoResult.fold((_) => null, (info) => info);
 
     result.fold(
       (error) => emit(GameDetailsError(error)),
@@ -64,7 +70,7 @@ class GameDetailsCubit extends Cubit<GameDetailsState> {
             return false;
           },
         );
-        emit(GameDetailsLoaded(isInstalled: isInstalled, game: _game));
+        emit(GameDetailsLoaded(isInstalled: isInstalled, game: _game, appInfo: _appInfo));
       },
     );
   }
@@ -75,6 +81,7 @@ class GameDetailsCubit extends Cubit<GameDetailsState> {
       game: _game,
       progress: 0.0,
       progressStatus: "Starting install...",
+      appInfo: _appInfo,
     ));
 
     repository.installGameStream(gameId).listen(
@@ -84,13 +91,14 @@ class GameDetailsCubit extends Cubit<GameDetailsState> {
           game: _game,
           progress: progressData.progress,
           progressStatus: progressData.status ?? "Installing...",
+          appInfo: _appInfo,
         ));
       },
       onError: (error) {
         emit(GameDetailsError(error.toString()));
       },
       onDone: () {
-        emit(GameDetailsLoaded(isInstalled: true, game: _game));
+        emit(GameDetailsLoaded(isInstalled: true, game: _game, appInfo: _appInfo));
       },
     );
   }
@@ -101,6 +109,7 @@ class GameDetailsCubit extends Cubit<GameDetailsState> {
       game: _game,
       progress: 0.0,
       progressStatus: "Starting removal...",
+      appInfo: _appInfo,
     ));
 
     repository.removeGameStream(gameId).listen(
@@ -110,13 +119,14 @@ class GameDetailsCubit extends Cubit<GameDetailsState> {
           game: _game,
           progress: progressData.progress,
           progressStatus: progressData.status ?? "Uninstalling...",
+          appInfo: _appInfo,
         ));
       },
       onError: (error) {
         emit(GameDetailsError(error.toString()));
       },
       onDone: () {
-        emit(GameDetailsLoaded(isInstalled: false, game: _game));
+        emit(GameDetailsLoaded(isInstalled: false, game: _game, appInfo: _appInfo));
       },
     );
   }
