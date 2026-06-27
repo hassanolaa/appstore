@@ -7,28 +7,22 @@ import '../cubit/games_state.dart';
 import '../widgets/game_card.dart';
 import 'package:game_store/features/game/presentation/pages/game_details_page.dart';
 
-class GamesPage extends StatefulWidget {
-  const GamesPage({super.key});
+class AppsPage extends StatefulWidget {
+  const AppsPage({super.key});
 
   @override
-  State<GamesPage> createState() => _GamesPageState();
+  State<AppsPage> createState() => _AppsPageState();
 }
 
-class _GamesPageState extends State<GamesPage> {
+class _AppsPageState extends State<AppsPage> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   int? _selectedCategoryId;
   String _searchQuery = '';
 
-  bool _isGameCategory(String name) {
-    final lowercase = name.toLowerCase();
-    return lowercase.contains('game') || lowercase == 'games';
-  }
-
   @override
   void initState() {
     super.initState();
-    _selectedCategoryId = 12; // Game category
     context.read<CategoriesCubit>().loadCategories();
     _loadData();
     _scrollController.addListener(_onScroll);
@@ -100,33 +94,29 @@ class _GamesPageState extends State<GamesPage> {
           builder: (context, state) {
             if (state is! CategoriesLoaded) return const SizedBox.shrink();
 
-            final categories = state.categories.where((c) => _isGameCategory(c.name)).toList();
-
             return SizedBox(
               height: 42,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: categories.length + 1,
+                itemCount: state.categories.length + 1,
                 itemBuilder: (context, index) {
                   final isAll = index == 0;
-                  final category = isAll ? null : categories[index - 1];
+                  final category = isAll ? null : state.categories[index - 1];
                   final isSelected =
                       isAll
-                          ? _selectedCategoryId == 12
+                          ? _selectedCategoryId == null
                           : _selectedCategoryId == category!.id;
 
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: _CategoryPill(
-                      label: isAll ? 'All Games' : category!.name,
+                      label: isAll ? 'All Apps' : category!.name,
                       isSelected: isSelected,
                       scheme: scheme,
                       onTap: () {
                         setState(() {
-                          _selectedCategoryId = isAll 
-                              ? 12
-                              : category!.id;
+                          _selectedCategoryId = isAll ? null : category!.id;
                         });
                         _loadData();
                       },
@@ -158,9 +148,9 @@ class _GamesPageState extends State<GamesPage> {
 
               if (state is GamesLoaded) {
                 if (state.games.isEmpty) {
-                  return _EmptyState(
+                  return const _EmptyState(
                     icon: Icons.search_off_rounded,
-                    title: 'No games found',
+                    title: 'No apps found',
                     subtitle: 'Try a different search or category filter.',
                   );
                 }
@@ -241,7 +231,7 @@ class _SearchField extends StatelessWidget {
         onSubmitted: onChanged,
         style: const TextStyle(color: Colors.white, fontSize: 15),
         decoration: InputDecoration(
-          hintText: 'Search games, genres, publishers…',
+          hintText: 'Search apps, categories, publishers…',
           hintStyle: TextStyle(color: Colors.white.withOpacity(0.38)),
           prefixIcon: Icon(
             Icons.search_rounded,
@@ -329,8 +319,8 @@ class _CategoryPill extends StatelessWidget {
         border: Border.all(
           color:
               isSelected
-                  ? scheme.primary.withOpacity(0.55)
-                  : Colors.white.withOpacity(0.09),
+                   ? scheme.primary.withOpacity(0.55)
+                   : Colors.white.withOpacity(0.09),
         ),
       ),
       child: Material(

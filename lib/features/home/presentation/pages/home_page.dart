@@ -2,10 +2,14 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:game_store/core/navigation/keyboard_navigation_manager.dart';
+import 'package:game_store/features/games/presentation/cubit/games_cubit.dart';
+import 'package:game_store/features/games/presentation/pages/apps_page.dart';
 import 'package:game_store/features/games/presentation/pages/games_page.dart';
 import 'package:game_store/features/games/presentation/pages/library_page.dart';
 import 'package:game_store/features/games/presentation/pages/updates_page.dart';
+import 'package:game_store/service_locator.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,9 +22,10 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    const GamesPage(),
-    const LibraryPage(),
-    const UpdatesPage(),
+    BlocProvider(create: (_) => sl<GamesCubit>(), child: const AppsPage()),
+    BlocProvider(create: (_) => sl<GamesCubit>(), child: const GamesPage()),
+    BlocProvider(create: (_) => sl<GamesCubit>(), child: const LibraryPage()),
+    BlocProvider(create: (_) => sl<GamesCubit>(), child: const UpdatesPage()),
   ];
 
   // ── Exact same logic as original, only decoration changed ──
@@ -279,25 +284,32 @@ class _HomePageState extends State<HomePage> {
                               ),
                               const SizedBox(height: 16),
 
-                              // ── Nav items — exact same calls as original ──
+                              // ── Nav items ──
                               _buildSidebarItem(
-                                icon: Icons.storefront_outlined,
-                                label: 'Browse Store',
+                                icon: Icons.apps_rounded,
+                                label: 'Apps',
                                 index: 0,
+                                theme: theme,
+                              ),
+                              const SizedBox(height: 8),
+                              _buildSidebarItem(
+                                icon: Icons.sports_esports_rounded,
+                                label: 'Games',
+                                index: 1,
                                 theme: theme,
                               ),
                               const SizedBox(height: 8),
                               _buildSidebarItem(
                                 icon: Icons.video_library_outlined,
                                 label: 'My Library',
-                                index: 1,
+                                index: 2,
                                 theme: theme,
                               ),
                               const SizedBox(height: 8),
                               _buildSidebarItem(
                                 icon: Icons.system_update_alt_outlined,
                                 label: 'Updates',
-                                index: 2,
+                                index: 3,
                                 theme: theme,
                               ),
 
@@ -389,8 +401,10 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 child: Icon(
                                   _selectedIndex == 0
-                                      ? Icons.storefront_rounded
+                                      ? Icons.apps_rounded
                                       : _selectedIndex == 1
+                                      ? Icons.sports_esports_rounded
+                                      : _selectedIndex == 2
                                       ? Icons.video_library_rounded
                                       : Icons.system_update_alt_rounded,
                                   color: scheme.primary,
@@ -406,8 +420,10 @@ class _HomePageState extends State<HomePage> {
                                   children: [
                                     Text(
                                       _selectedIndex == 0
-                                          ? 'Storefront'
+                                          ? 'Apps'
                                           : _selectedIndex == 1
+                                          ? 'Games'
+                                          : _selectedIndex == 2
                                           ? 'Library'
                                           : 'Available Updates',
                                       style: const TextStyle(
@@ -420,8 +436,10 @@ class _HomePageState extends State<HomePage> {
                                     const SizedBox(height: 2),
                                     Text(
                                       _selectedIndex == 0
-                                          ? 'Discover new games'
+                                          ? 'Discover desktop applications'
                                           : _selectedIndex == 1
+                                          ? 'Discover new games'
+                                          : _selectedIndex == 2
                                           ? 'Owned and installed'
                                           : 'Manage patches',
                                       style: TextStyle(
@@ -491,7 +509,15 @@ class _HomePageState extends State<HomePage> {
                             // ── Exact same IndexedStack as original ──
                             child: IndexedStack(
                               index: _selectedIndex,
-                              children: _pages,
+                              children: _pages.asMap().entries.map((entry) {
+                                return ExcludeFocus(
+                                  excluding: _selectedIndex != entry.key,
+                                  child: _LazyLoadWrapper(
+                                    isActive: _selectedIndex == entry.key,
+                                    child: entry.value,
+                                  ),
+                                );
+                              }).toList(),
                             ),
                           ),
                         ),
@@ -505,5 +531,30 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+}
+
+class _LazyLoadWrapper extends StatefulWidget {
+  final Widget child;
+  final bool isActive;
+
+  const _LazyLoadWrapper({required this.child, required this.isActive});
+
+  @override
+  State<_LazyLoadWrapper> createState() => _LazyLoadWrapperState();
+}
+
+class _LazyLoadWrapperState extends State<_LazyLoadWrapper> {
+  bool _hasLoaded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.isActive && !_hasLoaded) {
+      _hasLoaded = true;
+    }
+    if (!_hasLoaded) {
+      return const SizedBox.shrink(); // Don't build the child at all until active!
+    }
+    return widget.child;
   }
 }
