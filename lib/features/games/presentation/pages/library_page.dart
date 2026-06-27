@@ -73,13 +73,13 @@ class _LibraryPageState extends State<LibraryPage> {
                       scheme: scheme,
                     ),
                     const SizedBox(width: 10),
-                    _StatBadge(
-                      icon: Icons.storage_rounded,
-                      label: 'Local storage',
-                      scheme: scheme,
-                    ),
-                    const Spacer(),
-                    _SortButton(scheme: scheme),
+                    // _StatBadge(
+                    //   icon: Icons.storage_rounded,
+                    //   label: 'Local storage',
+                    //   scheme: scheme,
+                    // ),
+                    // const Spacer(),
+                    // _SortButton(scheme: scheme),
                   ],
                 ),
               ),
@@ -112,7 +112,8 @@ class _LibraryPageState extends State<LibraryPage> {
                                 GameDetailsPage(game: game, isInstalled: true),
                               ),
                             ).then(
-                              (_) => context.read<GamesCubit>().loadLibraryGames(),
+                              (_) =>
+                                  context.read<GamesCubit>().loadLibraryGames(),
                             ),
                       ),
                     );

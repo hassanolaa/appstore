@@ -17,13 +17,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (_) => sl<CategoriesCubit>(),
-        ),
-      ],
+      providers: [BlocProvider(create: (_) => sl<CategoriesCubit>())],
       child: MaterialApp(
         title: 'Linux Game Store',
+        debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: ThemeMode.dark,

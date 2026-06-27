@@ -322,39 +322,14 @@ class _HomePageState extends State<HomePage> {
                               ),
                               const SizedBox(height: 12),
                               Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: scheme.primary.withOpacity(0.18),
-                                      border: Border.all(
-                                        color: scheme.primary.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.person_rounded,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Expanded(
-                                    child: Text(
-                                      'Guest User',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                  const Text(
+                                  Text(
                                     'v1.0.0',
                                     style: TextStyle(
                                       color: Colors.white38,
-                                      fontSize: 11,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ],
@@ -450,38 +425,38 @@ class _HomePageState extends State<HomePage> {
                                   ],
                                 ),
                               ),
-                              // Updates badge
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 9,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(14),
-                                  color: Colors.white.withOpacity(0.05),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.08),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.download_done_rounded,
-                                      color: scheme.primary,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Text(
-                                      '3 updates ready',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              // // Updates badge
+                              // Container(
+                              //   padding: const EdgeInsets.symmetric(
+                              //     horizontal: 14,
+                              //     vertical: 9,
+                              //   ),
+                              //   decoration: BoxDecoration(
+                              //     borderRadius: BorderRadius.circular(14),
+                              //     color: Colors.white.withOpacity(0.05),
+                              //     border: Border.all(
+                              //       color: Colors.white.withOpacity(0.08),
+                              //     ),
+                              //   ),
+                              //   child: Row(
+                              //     children: [
+                              //       Icon(
+                              //         Icons.download_done_rounded,
+                              //         color: scheme.primary,
+                              //         size: 16,
+                              //       ),
+                              //       const SizedBox(width: 8),
+                              //       const Text(
+                              //         '3 updates ready',
+                              //         style: TextStyle(
+                              //           color: Colors.white,
+                              //           fontWeight: FontWeight.w600,
+                              //           fontSize: 13,
+                              //         ),
+                              //       ),
+                              //     ],
+                              //   ),
+                              // ),
                             ],
                           ),
                         ),
@@ -509,15 +484,16 @@ class _HomePageState extends State<HomePage> {
                             // ── Exact same IndexedStack as original ──
                             child: IndexedStack(
                               index: _selectedIndex,
-                              children: _pages.asMap().entries.map((entry) {
-                                return ExcludeFocus(
-                                  excluding: _selectedIndex != entry.key,
-                                  child: _LazyLoadWrapper(
-                                    isActive: _selectedIndex == entry.key,
-                                    child: entry.value,
-                                  ),
-                                );
-                              }).toList(),
+                              children:
+                                  _pages.asMap().entries.map((entry) {
+                                    return ExcludeFocus(
+                                      excluding: _selectedIndex != entry.key,
+                                      child: _LazyLoadWrapper(
+                                        isActive: _selectedIndex == entry.key,
+                                        child: entry.value,
+                                      ),
+                                    );
+                                  }).toList(),
                             ),
                           ),
                         ),
@@ -537,18 +513,16 @@ class _HomePageState extends State<HomePage> {
 class ActiveTab extends InheritedWidget {
   final bool isActive;
 
-  const ActiveTab({
-    super.key,
-    required this.isActive,
-    required super.child,
-  });
+  const ActiveTab({super.key, required this.isActive, required super.child});
 
   static bool of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<ActiveTab>()?.isActive ?? false;
+    return context.dependOnInheritedWidgetOfExactType<ActiveTab>()?.isActive ??
+        false;
   }
 
   @override
-  bool updateShouldNotify(ActiveTab oldWidget) => isActive != oldWidget.isActive;
+  bool updateShouldNotify(ActiveTab oldWidget) =>
+      isActive != oldWidget.isActive;
 }
 
 class _LazyLoadWrapper extends StatefulWidget {
@@ -572,9 +546,6 @@ class _LazyLoadWrapperState extends State<_LazyLoadWrapper> {
     if (!_hasLoaded) {
       return const SizedBox.shrink(); // Don't build the child at all until active!
     }
-    return ActiveTab(
-      isActive: widget.isActive,
-      child: widget.child,
-    );
+    return ActiveTab(isActive: widget.isActive, child: widget.child);
   }
 }
