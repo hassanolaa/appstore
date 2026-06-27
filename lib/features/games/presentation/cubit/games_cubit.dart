@@ -45,6 +45,28 @@ class GamesCubit extends Cubit<GamesState> {
     );
   }
 
+  Future<void> loadLibraryGames() async {
+    _lastQuery = null;
+    _lastCategoryId = null;
+    _currentOffset = 0;
+    _hasReachedMax = true;
+    _isLoadingMore = false;
+
+    emit(GamesLoading());
+    final gamesResult = await repository.getInstalledGameModels();
+    final installedResult = await repository.getInstalledGames();
+    final upgradableResult = await repository.getUpgradableGames();
+
+    gamesResult.fold(
+      (error) => emit(GamesError(error)),
+      (games) {
+        final installed = installedResult.fold((_) => <String>[], (list) => list);
+        final upgradable = upgradableResult.fold((_) => <String>[], (list) => list);
+        emit(GamesLoaded(games, installed, upgradable));
+      },
+    );
+  }
+
   Future<void> loadMoreGames() async {
     final currentState = state;
     if (currentState is! GamesLoaded || _isLoadingMore || _hasReachedMax) return;

@@ -45,6 +45,23 @@ class GamesRepositoryImpl {
     }
   }
 
+  Future<Either<String, List<GameModel>>> getInstalledGameModels() async {
+    try {
+      final installedRefs = await flatpakDataSource.listInstalled();
+      final appIds = installedRefs
+          .where((ref) => ref.startsWith('app/'))
+          .map((ref) => ref.split('/')[1])
+          .toList();
+      
+      if (appIds.isEmpty) return const Right([]);
+      
+      final games = await localDataSource.getGamesByIds(appIds);
+      return Right(games);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
   Future<Either<String, List<String>>> getUpgradableGames() async {
     try {
       final upgradable = await flatpakDataSource.listUpgradable();

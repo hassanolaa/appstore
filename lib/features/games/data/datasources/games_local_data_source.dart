@@ -4,6 +4,7 @@ import '../models/game_model.dart';
 abstract class GamesLocalDataSource {
   Future<List<GameModel>> getGames({int limit = 50, int offset = 0, String? query, int? categoryId, String? developer});
   Future<GameModel?> getGameById(String id);
+  Future<List<GameModel>> getGamesByIds(List<String> ids);
 }
 
 class GamesLocalDataSourceImpl implements GamesLocalDataSource {
@@ -58,6 +59,22 @@ class GamesLocalDataSourceImpl implements GamesLocalDataSource {
       );
       return maps.map((map) => GameModel.fromMap(map)).toList();
     }
+  }
+
+  @override
+  Future<List<GameModel>> getGamesByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+
+    // SQLite restricts the number of host parameters in a single query (often 999).
+    // For installed apps, it's highly unlikely to exceed this, but we can chunk if needed.
+    // Here we'll just use a simple IN clause.
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final List<Map<String, dynamic>> maps = await database.query(
+      'apps',
+      where: 'id IN ($placeholders)',
+      whereArgs: ids,
+    );
+    return maps.map((map) => GameModel.fromMap(map)).toList();
   }
 
   @override

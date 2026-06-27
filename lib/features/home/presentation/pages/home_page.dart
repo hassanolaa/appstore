@@ -534,6 +534,23 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+class ActiveTab extends InheritedWidget {
+  final bool isActive;
+
+  const ActiveTab({
+    super.key,
+    required this.isActive,
+    required super.child,
+  });
+
+  static bool of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<ActiveTab>()?.isActive ?? false;
+  }
+
+  @override
+  bool updateShouldNotify(ActiveTab oldWidget) => isActive != oldWidget.isActive;
+}
+
 class _LazyLoadWrapper extends StatefulWidget {
   final Widget child;
   final bool isActive;
@@ -555,6 +572,9 @@ class _LazyLoadWrapperState extends State<_LazyLoadWrapper> {
     if (!_hasLoaded) {
       return const SizedBox.shrink(); // Don't build the child at all until active!
     }
-    return widget.child;
+    return ActiveTab(
+      isActive: widget.isActive,
+      child: widget.child,
+    );
   }
 }

@@ -4,9 +4,33 @@ import '../cubit/games_cubit.dart';
 import '../cubit/games_state.dart';
 import '../widgets/game_card.dart';
 import 'package:game_store/features/game/presentation/pages/game_details_page.dart';
+import 'package:game_store/features/home/presentation/pages/home_page.dart';
 
-class LibraryPage extends StatelessWidget {
+class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
+
+  @override
+  State<LibraryPage> createState() => _LibraryPageState();
+}
+
+class _LibraryPageState extends State<LibraryPage> {
+  bool _wasActive = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initial load happens below in didChangeDependencies
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final isActive = ActiveTab.of(context);
+    if (isActive && !_wasActive) {
+      context.read<GamesCubit>().loadLibraryGames();
+    }
+    _wasActive = isActive;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +38,7 @@ class LibraryPage extends StatelessWidget {
 
     return BlocBuilder<GamesCubit, GamesState>(
       builder: (context, state) {
-        if (state is GamesLoading) {
+        if (state is GamesLoading || state is GamesInitial) {
           return _ShimmerGrid();
         }
 
@@ -23,18 +47,13 @@ class LibraryPage extends StatelessWidget {
             message: state.message,
             scheme: scheme,
             onRetry: () {
-              context.read<GamesCubit>().loadGames();
+              context.read<GamesCubit>().loadLibraryGames();
             },
           );
         }
 
         if (state is GamesLoaded) {
-          final installed =
-              state.games.where((game) {
-                return state.installedGames.any(
-                  (ref) => ref.contains(game.id) || game.id.contains(ref),
-                );
-              }).toList();
+          final installed = state.games;
 
           if (installed.isEmpty) {
             return _LibraryEmptyState(scheme: scheme);
@@ -93,7 +112,7 @@ class LibraryPage extends StatelessWidget {
                                 GameDetailsPage(game: game, isInstalled: true),
                               ),
                             ).then(
-                              (_) => context.read<GamesCubit>().loadGames(),
+                              (_) => context.read<GamesCubit>().loadLibraryGames(),
                             ),
                       ),
                     );
