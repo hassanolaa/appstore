@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:game_store/core/navigation/keyboard_navigation_manager.dart';
@@ -21,6 +23,7 @@ class _HomePageState extends State<HomePage> {
     const UpdatesPage(),
   ];
 
+  // ── Exact same logic as original, only decoration changed ──
   Widget _buildSidebarItem({
     required IconData icon,
     required String label,
@@ -31,10 +34,9 @@ class _HomePageState extends State<HomePage> {
 
     return Focus(
       onKey: (node, event) {
-        if (event is RawKeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
-          setState(() {
-            _selectedIndex = index;
-          });
+        if (event is RawKeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.enter) {
+          setState(() => _selectedIndex = index);
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
@@ -44,45 +46,98 @@ class _HomePageState extends State<HomePage> {
           final isFocused = Focus.of(context).hasFocus;
 
           return InkWell(
-            onTap: () {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            borderRadius: BorderRadius.circular(8),
+            onTap: () => setState(() => _selectedIndex = index),
+            borderRadius: BorderRadius.circular(14),
+            splashColor: theme.colorScheme.primary.withOpacity(0.12),
+            highlightColor: Colors.transparent,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
               decoration: BoxDecoration(
-                color: isFocused
-                    ? theme.colorScheme.primary.withOpacity(0.2)
-                    : isSelected
-                        ? theme.colorScheme.primary.withOpacity(0.1)
-                        : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(14),
+                // Glass tint: stronger when focused, lighter when selected
+                color:
+                    isFocused
+                        ? theme.colorScheme.primary.withOpacity(0.22)
+                        : isSelected
+                        ? theme.colorScheme.primary.withOpacity(0.13)
+                        : Colors.white.withOpacity(0.03),
                 border: Border.all(
-                  color: isFocused ? theme.colorScheme.primary : Colors.transparent,
+                  color:
+                      isFocused
+                          ? theme.colorScheme.primary.withOpacity(0.7)
+                          : isSelected
+                          ? theme.colorScheme.primary.withOpacity(0.35)
+                          : Colors.white.withOpacity(0.07),
                   width: 1,
                 ),
+                boxShadow:
+                    isSelected || isFocused
+                        ? [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.12),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                        : null,
               ),
               child: Row(
                 children: [
-                  Icon(
-                    icon,
-                    color: isSelected || isFocused
-                        ? theme.colorScheme.primary
-                        : theme.iconTheme.color?.withOpacity(0.7),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: isSelected || isFocused
-                          ? theme.colorScheme.primary
-                          : theme.textTheme.bodyLarge?.color?.withOpacity(0.7),
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  // Icon with subtle background pill when active
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(9),
+                      color:
+                          isSelected || isFocused
+                              ? theme.colorScheme.primary.withOpacity(0.18)
+                              : Colors.transparent,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 19,
+                      color:
+                          isSelected || isFocused
+                              ? theme.colorScheme.primary
+                              : Colors.white.withOpacity(0.5),
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color:
+                            isSelected || isFocused
+                                ? Colors.white
+                                : Colors.white.withOpacity(0.55),
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  // Active dot indicator
+                  if (isSelected)
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: theme.colorScheme.primary,
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.6),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -95,8 +150,10 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
     return KeyboardNavigationManager.withArrowNavigation(
+      // ── Exact same callback as original ──
       onArrowKey: (key) {
         if (key == LogicalKeyboardKey.escape) {
           if (Navigator.canPop(context)) {
@@ -105,81 +162,346 @@ class _HomePageState extends State<HomePage> {
         }
       },
       child: Scaffold(
-        body: Row(
-          children: [
-            // Left Sidebar
-            Container(
-              width: 240,
-              color: theme.colorScheme.surface,
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        backgroundColor: const Color(0xFF0B1020),
+        body: Container(
+          // Page background gradient
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF0B1020), Color(0xFF11182B), Color(0xFF0F172A)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
                 children: [
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text(
-                      'GAME STORE',
-                      style: theme.textTheme.displayMedium?.copyWith(
-                        fontSize: 20,
-                        letterSpacing: 1.5,
-                        color: theme.colorScheme.primary,
+                  // ── Left Sidebar — glass panel ────────────────────
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeOutCubic,
+                    width: 240,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withOpacity(0.08),
+                          Colors.white.withOpacity(0.03),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 30,
+                          offset: const Offset(0, 18),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 8),
+
+                              // Brand logo + name
+                              Row(
+                                children: [
+                                  Container(
+                                    height: 44,
+                                    width: 44,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(14),
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          scheme.primary,
+                                          scheme.primary.withOpacity(0.65),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: scheme.primary.withOpacity(
+                                            0.35,
+                                          ),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.sports_esports_rounded,
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: const [
+                                      Text(
+                                        'GAME STORE',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 1.2,
+                                        ),
+                                      ),
+                                      SizedBox(height: 2),
+                                      Text(
+                                        'Next-gen desktop hub',
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 24),
+                              Divider(
+                                height: 1,
+                                color: Colors.white.withOpacity(0.08),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // ── Nav items — exact same calls as original ──
+                              _buildSidebarItem(
+                                icon: Icons.storefront_outlined,
+                                label: 'Browse Store',
+                                index: 0,
+                                theme: theme,
+                              ),
+                              const SizedBox(height: 8),
+                              _buildSidebarItem(
+                                icon: Icons.video_library_outlined,
+                                label: 'My Library',
+                                index: 1,
+                                theme: theme,
+                              ),
+                              const SizedBox(height: 8),
+                              _buildSidebarItem(
+                                icon: Icons.system_update_alt_outlined,
+                                label: 'Updates',
+                                index: 2,
+                                theme: theme,
+                              ),
+
+                              const Spacer(),
+
+                              // Footer
+                              Divider(
+                                height: 1,
+                                color: Colors.white.withOpacity(0.08),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: scheme.primary.withOpacity(0.18),
+                                      border: Border.all(
+                                        color: scheme.primary.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.person_rounded,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  const Expanded(
+                                    child: Text(
+                                      'Guest User',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  const Text(
+                                    'v1.0.0',
+                                    style: TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  _buildSidebarItem(
-                    icon: Icons.store,
-                    label: 'Browse Store',
-                    index: 0,
-                    theme: theme,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildSidebarItem(
-                    icon: Icons.library_books,
-                    label: 'My Library',
-                    index: 1,
-                    theme: theme,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildSidebarItem(
-                    icon: Icons.update,
-                    label: 'Updates',
-                    index: 2,
-                    theme: theme,
-                  ),
-                  const Spacer(),
-                  const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Text(
-                      'v1.0.0',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
+
+                  const SizedBox(width: 16),
+
+                  // ── Right Main Content — glass shell ──────────────
+                  Expanded(
+                    child: Column(
+                      children: [
+                        // Top header bar
+                        Container(
+                          height: 72,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(24),
+                            color: Colors.white.withOpacity(0.06),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.08),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.18),
+                                blurRadius: 18,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Page icon
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  color: scheme.primary.withOpacity(0.14),
+                                ),
+                                child: Icon(
+                                  _selectedIndex == 0
+                                      ? Icons.storefront_rounded
+                                      : _selectedIndex == 1
+                                      ? Icons.video_library_rounded
+                                      : Icons.system_update_alt_rounded,
+                                  color: scheme.primary,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              // Title
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _selectedIndex == 0
+                                          ? 'Storefront'
+                                          : _selectedIndex == 1
+                                          ? 'Library'
+                                          : 'Available Updates',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _selectedIndex == 0
+                                          ? 'Discover new games'
+                                          : _selectedIndex == 1
+                                          ? 'Owned and installed'
+                                          : 'Manage patches',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.45),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Updates badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 9,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  color: Colors.white.withOpacity(0.05),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.08),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.download_done_rounded,
+                                      color: scheme.primary,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      '3 updates ready',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Content shell
+                        Expanded(
+                          child: Container(
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(28),
+                              color: Colors.white.withOpacity(0.06),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.08),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.22),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 14),
+                                ),
+                              ],
+                            ),
+                            // ── Exact same IndexedStack as original ──
+                            child: IndexedStack(
+                              index: _selectedIndex,
+                              children: _pages,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            // Divider
-            VerticalDivider(width: 1, color: Colors.grey.withOpacity(0.2)),
-            // Right Main Content
-            Expanded(
-              child: Scaffold(
-                appBar: AppBar(
-                  title: Text(
-                    _selectedIndex == 0
-                        ? 'Storefront'
-                        : _selectedIndex == 1
-                            ? 'Library'
-                            : 'Available Updates',
-                  ),
-                ),
-                body: IndexedStack(
-                  index: _selectedIndex,
-                  children: _pages,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

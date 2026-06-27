@@ -25,7 +25,9 @@ class _DeveloperPageState extends State<DeveloperPage> {
   }
 
   Future<(List<GameModel>, List<String>)> _loadData() async {
-    final gamesResult = await _repository.getGames(developer: widget.developerName);
+    final gamesResult = await _repository.getGames(
+      developer: widget.developerName,
+    );
     final installedResult = await _repository.getInstalledGames();
     final games = gamesResult.fold((_) => <GameModel>[], (g) => g);
     final installed = installedResult.fold((_) => <String>[], (i) => i);
@@ -35,18 +37,20 @@ class _DeveloperPageState extends State<DeveloperPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.developerName} Games'),
-      ),
+      appBar: AppBar(title: Text('${widget.developerName} Games')),
       body: FutureBuilder<(List<GameModel>, List<String>)>(
         future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error loading games: ${snapshot.error}'));
+            return Center(
+              child: Text('Error loading games: ${snapshot.error}'),
+            );
           } else if (!snapshot.hasData || snapshot.data!.$1.isEmpty) {
-            return const Center(child: Text('No games found for this developer.'));
+            return const Center(
+              child: Text('No games found for this developer.'),
+            );
           }
 
           final games = snapshot.data!.$1;
@@ -63,7 +67,9 @@ class _DeveloperPageState extends State<DeveloperPage> {
             itemCount: games.length,
             itemBuilder: (context, index) {
               final game = games[index];
-              final isInstalled = installedList.any((ref) => ref.contains(game.id) || game.id.contains(ref));
+              final isInstalled = installedList.any(
+                (ref) => ref.contains(game.id) || game.id.contains(ref),
+              );
 
               return GameCard(
                 game: game,
@@ -72,7 +78,11 @@ class _DeveloperPageState extends State<DeveloperPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => GameDetailsPage(game: game, isInstalled: isInstalled),
+                      builder:
+                          (_) => GameDetailsPage(
+                            game: game,
+                            isInstalled: isInstalled,
+                          ),
                     ),
                   ).then((_) {
                     setState(() {
