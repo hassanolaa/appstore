@@ -11,6 +11,14 @@ Designed for both traditional desktop usage and couch-gaming setups, the applica
 
 ---
 
+## 📸 Screen Showcase
+
+| 📂 Discover Apps View | 📂 My Library View | ⚙️ App/Game Details View |
+| :---: | :---: | :---: |
+| ![Discover Apps](screenshots/image1.png) | ![My Library](screenshots/image3.png) | ![App/Game Details](screenshots/image2.png) |
+
+---
+
 ## ✨ Key Features
 
 - 📦 **Apps & Games Catalog**: Explore and filter a massive collection of Linux software and games categorized via an embedded metadata catalog.
