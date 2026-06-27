@@ -43,7 +43,8 @@ class _GamesPageState extends State<GamesPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       context.read<GamesCubit>().loadMoreGames();
     }
   }
@@ -78,17 +79,17 @@ class _GamesPageState extends State<GamesPage> {
                 ),
               ),
               const SizedBox(width: 12),
-              _IconPill(
-                icon: Icons.tune_rounded,
-                tooltip: 'Filters',
-                scheme: scheme,
-              ),
-              const SizedBox(width: 8),
-              _IconPill(
-                icon: Icons.swap_vert_rounded,
-                tooltip: 'Sort',
-                scheme: scheme,
-              ),
+              // _IconPill(
+              //   icon: Icons.tune_rounded,
+              //   tooltip: 'Filters',
+              //   scheme: scheme,
+              // ),
+              // const SizedBox(width: 8),
+              // _IconPill(
+              //   icon: Icons.swap_vert_rounded,
+              //   tooltip: 'Sort',
+              //   scheme: scheme,
+              // ),
             ],
           ),
         ),
@@ -100,7 +101,8 @@ class _GamesPageState extends State<GamesPage> {
           builder: (context, state) {
             if (state is! CategoriesLoaded) return const SizedBox.shrink();
 
-            final categories = state.categories.where((c) => _isGameCategory(c.name)).toList();
+            final categories =
+                state.categories.where((c) => _isGameCategory(c.name)).toList();
 
             return SizedBox(
               height: 42,
@@ -124,9 +126,7 @@ class _GamesPageState extends State<GamesPage> {
                       scheme: scheme,
                       onTap: () {
                         setState(() {
-                          _selectedCategoryId = isAll 
-                              ? 12
-                              : category!.id;
+                          _selectedCategoryId = isAll ? 12 : category!.id;
                         });
                         _loadData();
                       },

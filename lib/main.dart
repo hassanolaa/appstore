@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [BlocProvider(create: (_) => sl<CategoriesCubit>())],
       child: MaterialApp(
-        title: 'Linux Game Store',
+        title: 'App Store',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         darkTheme: AppTheme.darkTheme,

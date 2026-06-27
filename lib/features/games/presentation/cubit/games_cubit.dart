@@ -115,6 +115,6 @@ class GamesCubit extends Cubit<GamesState> {
     try {
       await repository.upgradeGameStream(id).drain();
     } catch (_) {}
-    loadGames(query: _lastQuery, categoryId: _lastCategoryId); // Refresh installed/upgradable status
+    loadLibraryGames(); // Refresh installed/upgradable status
   }
 }

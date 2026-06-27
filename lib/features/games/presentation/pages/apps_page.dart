@@ -37,7 +37,8 @@ class _AppsPageState extends State<AppsPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       context.read<GamesCubit>().loadMoreGames();
     }
   }
@@ -72,17 +73,17 @@ class _AppsPageState extends State<AppsPage> {
                 ),
               ),
               const SizedBox(width: 12),
-              _IconPill(
-                icon: Icons.tune_rounded,
-                tooltip: 'Filters',
-                scheme: scheme,
-              ),
-              const SizedBox(width: 8),
-              _IconPill(
-                icon: Icons.swap_vert_rounded,
-                tooltip: 'Sort',
-                scheme: scheme,
-              ),
+              // _IconPill(
+              //   icon: Icons.tune_rounded,
+              //   tooltip: 'Filters',
+              //   scheme: scheme,
+              // ),
+              // const SizedBox(width: 8),
+              // _IconPill(
+              //   icon: Icons.swap_vert_rounded,
+              //   tooltip: 'Sort',
+              //   scheme: scheme,
+              // ),
             ],
           ),
         ),
@@ -319,8 +320,8 @@ class _CategoryPill extends StatelessWidget {
         border: Border.all(
           color:
               isSelected
-                   ? scheme.primary.withOpacity(0.55)
-                   : Colors.white.withOpacity(0.09),
+                  ? scheme.primary.withOpacity(0.55)
+                  : Colors.white.withOpacity(0.09),
         ),
       ),
       child: Material(

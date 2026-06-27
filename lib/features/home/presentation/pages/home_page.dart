@@ -256,7 +256,7 @@ class _HomePageState extends State<HomePage> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: const [
                                       Text(
-                                        'GAME STORE',
+                                        'APP STORE',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 15,
